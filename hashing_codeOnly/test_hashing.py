@@ -1,6 +1,9 @@
 import numpy as np
 import scipy as sp
 import scipy.spatial.distance
+import distpy
+
+HAMMING = distpy.Hamming()
 
 
 def test(X, bit, method):
@@ -83,20 +86,8 @@ def test(X, bit, method):
        
     B1 = Y[:num_training, :]
     B2 = Y[num_training:, :]
-    import distpy
-    print(B1.dtype)
-    import time
-    st = time.time()
-    Dhamm2 = distpy.Hamming().cdist(B2, B1)
-    print(time.time() - st)
-    st = time.time()
-    #Dhamm = hammingDist(B2, B1)
-    #print(time.time() - st)
-    #np.testing.assert_equal(Dhamm[0], Dhamm2[0])
-    #np.testing.assert_equal(Dhamm, Dhamm2)
-    print(Dhamm2[0])
-    #print(Dhamm[0])
-    return pr(WtrueTestTraining, Dhamm2)
+    Dhamm = HAMMING.cdist(B2, B1)
+    return pr(WtrueTestTraining, Dhamm)
     
 
 def itq(V, num_iter):
@@ -125,7 +116,7 @@ def compactbit(b):
     cb = np.zeros([nSamples, nwords], dtype='uint8')
 
     for j in range(np.int(nwords)):
-        w = np.ceil(j/8)
+        w = np.ceil(j / 8)
         for k in range(nSamples):
             s = j*8
             e = min((j+1)*8, nbits)
@@ -138,31 +129,6 @@ def bin2dec(b):
     for i in range(len(b)):
         d = d + 2**i*b[i]
     return d
-
-
-def hammingDist(B1, B2):
-    bit_in_char = np.array([0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3,
-    3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4,
-    3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2,
-    2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5,
-    3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5,
-    5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 1, 2, 2, 3,
-    2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4,
-    4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 2, 3, 3, 4, 3, 4,
-    4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6,
-    5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5,
-    5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8], dtype='uint16')
-
-    n1 = B1.shape[0]
-    [n2, nwords] = B2.shape
-
-    Dh = np.zeros([n1, n2], 'uint16')
-    for j in range(n1):
-        for n in range(nwords):
-            y = np.bitwise_xor(B1[j, n], B2[:, n])
-            Dh[j, :] = Dh[j, :] + bit_in_char[y]
-    return Dh
 
 
 def pr(Wtrue, Dhat):
@@ -189,17 +155,5 @@ def pr(Wtrue, Dhat):
         rate[n] = retrieved_pairs / np.float(Ntest*Ntrain)
     return precision, recall, rate
 
-bit_in_char = np.array([0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3,
-    3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4,
-    3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2,
-    2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5,
-    3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5,
-    5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 1, 2, 2, 3,
-    2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4,
-    4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 2, 3, 3, 4, 3, 4,
-    4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6,
-    5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5,
-    5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 7], dtype='uint16')
 
 recall, precision, rate = test(np.random.random((3000, 128)), 256, 'ITQ')
