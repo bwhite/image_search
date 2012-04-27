@@ -32,16 +32,9 @@ def make_ground_truth(samples_train, samples_test, avg_num_neighbors=50, thresh_
     return test_training_gt
 
 
-def evaluate_hashing_methods(samples, bit, method):
-    """
-
-    Args:
-        samples: samples x dims
-        bit: Number of output bits
-        method: Which method to use
-    """
+def samples_split_train_test(samples, num_train=1000):
     #Set Params
-    num_test = int(.5 * len(samples))
+    num_test = samples.shape[0] - num_train
 
     # Randomize the samples
     random_index = range(samples.shape[0])
@@ -51,8 +44,19 @@ def evaluate_hashing_methods(samples, bit, method):
     # Split samples into train/test
     samples_test = samples[:num_test, :]
     samples_train = samples[num_test:, :]
+    return samples_train, samples_test
+
+
+def evaluate_hashing_method(samples_train, samples_test, bit, method):
+    """
+
+    Args:
+        samples_train: samples x dims
+        samples_test: samples x dims
+        bit: Number of output bits
+        method: Which method to use
+    """
     num_training = samples_train.shape[0]
-    D = samples.shape[1]
     print('NumTrain[%d] NumTest[%d]' % (len(samples_train), len(samples_test)))
 
     test_training_gt = make_ground_truth(samples_train, samples_test)
@@ -61,52 +65,62 @@ def evaluate_hashing_methods(samples, bit, method):
     XX = np.vstack((samples_train, samples_test))
 
     #Center the data
-    sampleMean = np.mean(XX, 0)
-    XX = XX - sampleMean
+    sample_mean = np.mean(XX, 0)
+    XX = XX - sample_mean
 
     #Evaluate different hashing approaches
     if method == 'ITQ':
         print 'ITQ'
         #Perform PCA
-        a = np.cov(XX[0:num_training, :], rowvar=0)
+        a = np.cov(XX[:num_training, :], rowvar=0)
         D, V = np.linalg.eig(a)
-        pc = V[:, 0:32]
+        pc = V[:, np.argsort(D)[::-1][:bit]]
         XX = np.dot(XX, pc)
         #ITQ
-        Y, R = itq(XX[0:num_training, :], 50)
-        XX = np.dot(XX, R)
-        Y = np.zeros(XX.shape)
-        Y[XX>=0] = 1
-        Y = compactbit(Y>0)
+        Y, proj = itq(XX[:num_training, :], 50)
+        #XX = np.dot(XX, R)
+        #Y = np.zeros(XX.shape)
+        #Y[XX>=0] = 1
+        #Y = np.packbits(np.array(Y > 0, dtype=np.uint8), 1)
     elif method == 'RR':
         print 'RR'
         #Perform PCA
-        a = np.cov(XX[0:num_training, :], rowvar=0)
-        D, V = np.linalg.eig(a)
-        pc = V[:, 0:32]
-        XX = np.dot(XX, pc)
+        D, V = np.linalg.eig(np.cov(XX[:num_training, :], rowvar=0))
+        pc = V[:, np.argsort(D)[::-1][:bit]]
         #RR
-        R = np.random.rand(XX.shape[1], bit)
+        R = np.random.rand(pc.shape[1], bit)
         U, S, V = np.linalg.svd(R)
-        XX = np.dot(XX, U[:, :bit])
-    elif method == 'SKLSH':
-        print 'SKLSH'
+        proj = np.dot(pc, U[:, :bit])
     else:
-        print 'LSH'
-        XX = np.dot(XX, np.random.randn(XX.shape[1], bit))
-        Y = np.zeros(XX.shape)
-        Y[XX>=0]=1
+        raise ValueError('Unknown method [%s]' % method)
+    #elif method == 'SKLSH':
+    #    print 'SKLSH'
+    #else:
+    #    print 'LSH'
+    #    XX = np.dot(XX, np.random.randn(XX.shape[1], bit))
+    #    Y = np.zeros(XX.shape)
+    #    Y[XX>=0]=1
+    Y = hash_samples(XX, proj)
+    print Y.shape
     B1 = Y[:num_training, :]
     B2 = Y[num_training:, :]
     Dhamm = HAMMING.cdist(B2, B1)
-    return pr(test_training_gt, Dhamm)
-    
+    precision, recall, rate = pr(test_training_gt, Dhamm)
+    return {'precision': precision, 'recall': recall, 'rate': rate,
+            'sample_mean': sample_mean, 'proj': proj}
+
+
+def hash_samples(samples, proj, sample_mean=None):
+    if sample_mean is not None:
+        samples = samples - sample_mean
+    return np.packbits(np.array(np.dot(samples, proj) >= 0, dtype=np.uint8), 1)
+
 
 def itq(V, num_iter):
     bit = V.shape[1]
     R = np.random.rand(bit, bit)
     U, S, Vh = np.linalg.svd(R)
-    R = U[:, 0:bit]
+    R = U[:, :bit]
 
     for iter in range(num_iter+1):
         Z = np.dot(V, R)
@@ -122,49 +136,33 @@ def itq(V, num_iter):
     return B, R
 
 
-def compactbit(b):
-    [nSamples, nbits] = b.shape
-    nwords = np.ceil(nbits/8)
-    cb = np.zeros([nSamples, nwords], dtype='uint8')
-
-    for j in range(np.int(nwords)):
-        w = np.ceil(j / 8)
-        for k in range(nSamples):
-            s = j*8
-            e = min((j+1)*8, nbits)
-            cb[k, j] = bin2dec(b[k, s:e])
-    return cb
-
-
-def bin2dec(b):
-    d = 0
-    for i in range(len(b)):
-        d = d + 2**i*b[i]
-    return d
-
-
 def pr(Wtrue, Dhat):
+    print(Dhat.shape)
+    print(Dhat.dtype)
+    min_hamm = np.max([0, np.min(Dhat) - 1])
     max_hamm = np.max(Dhat)
+    print((min_hamm, max_hamm))
     
     [Ntest, Ntrain] = Wtrue.shape
     total_good_pairs = np.sum(Wtrue)
 
     #Find pairs with similar codes
-    precision = np.zeros(max_hamm)
-    recall = np.zeros(max_hamm)
-    rate = np.zeros(max_hamm)
+    num_hamm = max_hamm - min_hamm + 1
+    precision = np.zeros(num_hamm)
+    recall = np.zeros(num_hamm)
+    rate = np.zeros(num_hamm)
 
-    for n in range(len(precision)):
-        j = (Dhat<=(n+0.00001))
+    for m, n in enumerate(range(min_hamm, max_hamm)):
+        j = (Dhat <= n)
         # Exp. num of good pairs that have exactly the same code
         retrieved_good_pairs = np.sum(Wtrue[j])
     	
         # Exp. num of total pairs that have exactly the same code
         retrieved_pairs = np.sum(j)
 
-        precision[n] = retrieved_good_pairs / np.float(retrieved_pairs)
-        recall[n] = retrieved_good_pairs / np.float(total_good_pairs)
-        rate[n] = retrieved_pairs / np.float(Ntest*Ntrain)
+        precision[m] = retrieved_good_pairs / np.float(retrieved_pairs)
+        recall[m] = retrieved_good_pairs / np.float(total_good_pairs)
+        rate[m] = retrieved_pairs / np.float(Ntest*Ntrain)
     return precision, recall, rate
 
 
@@ -173,11 +171,21 @@ def print_gt_example(samples_train, samples_test, test_training_gt):
     print(samples_train[test_training_gt[0], :])
     print('Mean Num neighbors[%f]' % (np.mean(np.sum(np.asfarray(test_training_gt), 0))))
 
-train = np.random.random((1000, 16))
-test = np.random.random((10000, 16))
-test_training_gt = make_ground_truth(train, test)
 
-samples = np.random.random((10000, 16))
-p, r, rate = evaluate_hashing_methods(samples, 16, 'ITQ')
-print np.vstack([p, r]).T
-#print_gt_example(train, test, test_training_gt)
+def print_pr_ret(out):
+    for x in np.vstack([out['precision'], out['recall'], out['rate']]).T:
+        print x
+
+if __name__ == '__main__':
+    #train = np.random.random((1000, 16))
+    #test = np.random.random((10000, 16))
+    #test_training_gt = make_ground_truth(train, test)
+    #samples = np.random.random((3000, 128))
+    import pickle
+    #samples = np.array(pickle.load(open('/home/brandyn/celery/features.pkl'))[:3000])
+    samples = np.vstack(sum(pickle.load(open('../cifar_experiments/train.pkl')).values(), []) + sum(pickle.load(open('../cifar_experiments/test.pkl')).values(), []))
+    #print(samples.shape)
+    samples_train, samples_test = samples_split_train_test(samples)
+    out = evaluate_hashing_method(samples_train, samples_test, 64, 'RR')
+    print_pr_ret(out)
+    #print_gt_example(train, test, test_training_gt)
