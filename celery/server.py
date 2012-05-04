@@ -12,6 +12,7 @@ bottle.debug(True)
 import numpy as np
 import requests
 from mapred.compute_db import normalize_features
+from mapred.driver import make_feature_dict
 IMAGE_KYM_URIS = HAMMING = ARGS = IMAGE_URIS = HASHES = HASH_DATA = FEATURE = None
 
 
@@ -48,18 +49,13 @@ def main():
     ARGS = parser.parse_args()
     IMAGE_URIS, HASHES, HASH_DATA = pickle.load(open('mapred/hashes.pkl'))
     HAMMING = distpy.Hamming()
-    f0 = {'name': 'imfeat.Histogram', 'args': ['lab']}
-    f1 = {'name': 'imfeat.GIST'}
-    feature_dict = {'name': 'imfeat.MetaFeature', 'args': [f0, f1], 'kw': {'max_side': 100}}
-    #{'name': 'imfeat.Histogram', 'args': ['lab']})  # TODO(brandyn): Get this from hashes.pkl
-    FEATURE = call_import(feature_dict)
     url_to_kym_url = {}
     for kym_url, urls in pickle.load(open('/home/brandyn/kym/meme_photo_images.pkl')).items():
         for url in urls:
             assert url not in url_to_kym_url  # Check if each is unique as we assume it
             url_to_kym_url[url] = kym_url
     IMAGE_KYM_URIS = [url_to_kym_url[image_uri] for image_uri in IMAGE_URIS]
-        
+    FEATURE = call_import(make_feature_dict())
     bottle.run(host='0.0.0.0', port=ARGS.port, server='gevent')
 
 

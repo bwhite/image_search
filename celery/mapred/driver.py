@@ -6,6 +6,12 @@ import picarus
 import json
 
 
+def make_feature_dict():
+    f0 = {'name': 'imfeat.Histogram', 'args': ['lab']}
+    f1 = {'name': 'imfeat.GIST'}
+    return {'name': 'imfeat.MetaFeature', 'args': [f0, f1], 'kw': {'max_side': 100}}
+
+
 def data_iter():
     keys = set(sum([list(y) for x, y in pickle.load(open('/home/brandyn/kym/meme_photo_images.pkl')).items()], []))
     db = leveldb.LevelDB('/mnt/cassdrive0/crawer_machine_home_dirs/home/brandyn/crawl_cache')
@@ -32,9 +38,7 @@ def mix_chain(*iterators):
 
 
 def main():
-    f0 = {'name': 'imfeat.Histogram', 'args': ['lab']}
-    f1 = {'name': 'imfeat.GIST'}
-    feature_dict = {'name': 'imfeat.MetaFeature', 'args': [f0, f1], 'kw': {'max_side': 100}}
+    feature_dict = make_feature_dict()
     iterators = []
     d = data_iter()
     orig_dir = os.path.abspath('.')
@@ -47,5 +51,5 @@ def main():
         for kv in mix_chain(*iterators):
             pickle.dump(kv, fp, -1)
     os.chdir(orig_dir)
-
-main()
+if __name__ == '__main__':
+    main()
