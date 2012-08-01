@@ -5,4 +5,4 @@ setup(name='image_search',
       author='Brandyn A. White',
       author_email='bwhite@dappervision.com',
       license='GPLv3',
-      packages=find_packages())
+      packages=['image_search'])

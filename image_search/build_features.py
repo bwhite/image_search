@@ -29,4 +29,3 @@ class Mapper(object):
 
 if __name__ == "__main__":
     hadoopy.run(Mapper)
-

@@ -28,8 +28,8 @@ def test(X, bit, method):
     #Define Ground Truth Neighbors
     DtrueTraining = sp.spatial.distance.cdist(Xtraining[:100, :], Xtraining)  # NOTE(brandyn): used 100 values (constant) before
     print(DtrueTraining)
-    Dball = np.sort(DtrueTraining, 1)
-    Dball = np.mean(Dball[:, avgNumNeighbors-1])
+    Dball = np.sort(DtrueTraining, 1)[:, avgNumNeighbors-1]
+    Dball = np.mean(Dball)
     print 'Dball[%s]' % Dball  # ?: Why?
 
     #Scale data so that target distance is 1
