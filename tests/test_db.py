@@ -44,19 +44,16 @@ class Test(unittest.TestCase):
 
     def test_db(self):
         num_db_images = 1000000
-        num_search_images = 1
+        num_search_images = 3
         num_bytes = 16
         db = image_search.db.LinearHashDB(num_bytes)
         hashes = np.array(np.random.randint(0, 256, (num_db_images, num_bytes)), dtype=np.uint8)
         search_hashes = np.array(np.random.randint(0, 256, (num_search_images, num_bytes)), dtype=np.uint8)
         db.store_hashes(hashes, np.array(np.arange(num_db_images), dtype=np.uint64))
-        for result_ids in db.search_hash_multi(search_hashes):
-            pass
+        for result_ids in db.search_hash_nn_multi(search_hashes):
+            print(result_ids)
         print(hashes.shape)
         print(search_hashes.shape)
-        
-        
-        
 
 if __name__ == '__main__':
     unittest.main()
