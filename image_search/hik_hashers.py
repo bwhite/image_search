@@ -52,7 +52,7 @@ class HIKHasherGreedy(object):
         class_masks = {}  # [class_num] = masks
         for masks in image_masks:
             for class_num in range(masks.shape[2]):
-                class_masks.setdefault(class_num, []).append(np.ascontiguousarray(masks[:, :, class_num]))
+                class_masks.setdefault(class_num, []).append(resize_mask(np.ascontiguousarray(masks[:, :, class_num])))
         return class_masks
 
     def train(self, database_masks, query_masks=None):
