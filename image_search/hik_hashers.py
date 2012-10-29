@@ -43,10 +43,10 @@ def random_rect():
 
 class HIKHasherGreedy(object):
 
-    def __init__(self, num_rects=100, num_queries=20, num_bits=8):
+    def __init__(self, num_rects=100, num_queries=20, hash_bits=8):
         self.num_rects = num_rects
         self.num_queries = num_queries
-        self.num_bits = num_bits
+        self.hash_bits = hash_bits
 
     def _image_masks_to_class_masks(self, masks):
         class_masks = {}  # [class_num] = masks
@@ -83,7 +83,7 @@ class HIKHasherGreedy(object):
             prev_min_params = []
             total_residual = float('inf')
             total_weights = None
-            for bit in range(self.num_bits):
+            for bit in range(self.hash_bits):
                 # Randomly select rectangles
                 min_params = ()
                 min_query_hash_bits = None
@@ -120,3 +120,4 @@ class HIKHasherGreedy(object):
                     prev_min_params.append(min_params)
             self.class_params[class_num] = {'params': prev_min_params, 'residual': total_residual, 'w': total_weights}
             pickle.dump(self.class_params, open('class_params.pkl', 'w'), -1)
+        return self
