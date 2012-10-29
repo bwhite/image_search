@@ -72,8 +72,8 @@ class HIKHasherGreedy(object):
     def train(self, database_masks, query_masks=None):
         """
         Args:
-            query_masks: List of masks
-            database_masks: List of masks
+            database_masks: Iter of masks
+            query_masks: Iter of masks or None
         """
         database_class_masks = self._image_masks_to_class_masks(database_masks)
         if query_masks is None:
