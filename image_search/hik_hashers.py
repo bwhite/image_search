@@ -48,11 +48,11 @@ class HIKHasherGreedy(object):
         self.num_queries = num_queries
         self.hash_bits = hash_bits
 
-    def _image_masks_to_class_masks(self, masks):
+    def _image_masks_to_class_masks(self, image_masks):
         class_masks = {}  # [class_num] = masks
-        for class_masks in masks:
-            for class_num in range(class_masks.shape[2]):
-                class_masks.setdefault(class_num, []).append(np.ascontiguousarray(class_masks[:, :, class_num]))
+        for masks in image_masks:
+            for class_num in range(masks.shape[2]):
+                class_masks.setdefault(class_num, []).append(np.ascontiguousarray(masks[:, :, class_num]))
         return class_masks
 
     def train(self, database_masks, query_masks=None):
