@@ -64,7 +64,7 @@ class HIKHasherGreedy(object):
             out = []
             for class_num, params in class_params:
                 class_mask = np.ascontiguousarray(resize_mask(mask[:, :, class_num]))
-                for p in params:
+                for p in params['params']:
                     out.append(compute_mask_rect_area(class_mask, p['rect']) >= p['t'])
             outs.append(out)
         return image_search._bool_to_hash(np.array(outs))
