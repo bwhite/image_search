@@ -3,6 +3,7 @@ import cv2
 import cPickle as pickle
 import random
 import kernels
+import image_search
 
 
 def resize_mask(mask, mask_size=32):
@@ -54,6 +55,19 @@ class HIKHasherGreedy(object):
             for class_num in range(masks.shape[2]):
                 class_masks.setdefault(class_num, []).append(resize_mask(np.ascontiguousarray(masks[:, :, class_num])))
         return class_masks
+
+    def __call__(self, masks):
+        class_params = self.class_params.items()
+        class_params.sort(key=lambda x: x[0])
+        outs = []
+        for mask in masks:
+            out = []
+            for class_num, params in class_params:
+                class_mask = np.ascontiguousarray(resize_mask(mask[:, :, class_num]))
+                for p in params:
+                    out.append(compute_mask_rect_area(class_mask, p['rect']) >= p['t'])
+            outs.append(out)
+        return image_search._bool_to_hash(np.array(outs))
 
     def train(self, database_masks, query_masks=None):
         """

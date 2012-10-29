@@ -1,4 +1,5 @@
 import numpy as np
+import image_search
 
 
 class MedianHasher(object):
@@ -15,10 +16,6 @@ class MedianHasher(object):
     def __str__(self):
         return str(dict((x, getattr(self, x)) for x in ['used_inds', 'sample_mean', 'sample_std',
                                                         'median_feature']))
-
-    def _bool_to_hash(self, features):
-        bit_shape = features.shape[0], int(np.ceil(features.shape[1] / 8.))
-        return np.packbits(np.array(features, dtype=np.uint8)).reshape(bit_shape)
 
     def _train_remove_unused_features(self, features):
         if features.shape[0] <= 1:
@@ -88,7 +85,7 @@ class MedianHasher(object):
 
     def _postprocess(self, features):
         features = self._condition_features(features, pad=True)
-        return self._bool_to_hash(features > self.median_feature)
+        return image_search._bool_to_hash(features > self.median_feature)
 
     def __call__(self, features):
         return self._postprocess(self._preprocess(features))
