@@ -63,3 +63,26 @@ class LinearHashDB(Base):
     def search_hash_knn(self, h, k):
         h = self._check_search_hash_knn(h, k)
         return self._ids[self._d.knn(self._hashes, h, k)[:, 1]]
+
+
+class LinearHashJaccardDB(Base):
+
+    def __init__(self, weights, num_hash_bytes=None):
+        super(LinearHashJaccardDB, self).__init__(num_hash_bytes)
+        self._hashes = None
+        self._ids = np.array([], dtype=np.uint64)
+        self._d = distpy.JaccardWeighted(weights)  # TODO: Ensure serialization works, if not make a fixup function
+
+    def store_hashes(self, hashes, ids):
+        if self._num_hash_bytes is None:
+            self._num_hash_bytes = hashes.shape[1]
+        if self._hashes is None:
+            self._hashes = np.zeros((0, self._num_hash_bytes), dtype=np.uint8)
+        hashes, ids = self._check_store_hashes(hashes, ids)
+        self._hashes = np.vstack([self._hashes, hashes])
+        self._ids = np.hstack([self._ids, ids])
+        return self
+
+    def search_hash_knn(self, h, k):
+        h = self._check_search_hash_knn(h, k)
+        return self._ids[self._d.knn(self._hashes, h, k)[:, 1]]

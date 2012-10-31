@@ -1,5 +1,5 @@
 import numpy as np
-from db import LinearHashDB
+from db import LinearHashDB, LinearHashJaccardDB
 from hashers import MedianHasher, RRMedianHasher, hash_bit_mean
 from hik_hashers import HIKHasherGreedy
 
