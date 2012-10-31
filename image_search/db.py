@@ -85,4 +85,4 @@ class LinearHashJaccardDB(Base):
 
     def search_hash_knn(self, h, k):
         h = self._check_search_hash_knn(h, k)
-        return self._ids[self._d.knn(self._hashes, h, k)[:, 1]]
+        return self._ids[self._d.knn(self._hashes, h, k)[:, 1].astype(np.int32_t)]
