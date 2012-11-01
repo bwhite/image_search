@@ -59,15 +59,12 @@ class HIKHasherGreedy(object):
     def __call__(self, masks):
         class_params = self.class_params.items()
         class_params.sort(key=lambda x: x[0])
-        outs = []
-        for mask in masks:
-            out = []
-            for class_num, params in class_params:
-                class_mask = np.ascontiguousarray(resize_mask(mask[:, :, class_num]))
-                for p in params['params']:
-                    out.append(compute_mask_rect_area(class_mask, p['rect']) >= p['t'])
-            outs.append(out)
-        return image_search._bool_to_hash(np.array(outs))
+        out = []
+        for class_num, params in class_params:
+            class_mask = np.ascontiguousarray(resize_mask(masks[:, :, class_num]))
+            for p in params['params']:
+                out.append(compute_mask_rect_area(class_mask, p['rect']) >= p['t'])
+        return image_search._bool_to_hash(np.array(out))
 
     def train(self, database_masks, query_masks=None):
         """
