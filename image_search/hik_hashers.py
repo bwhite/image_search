@@ -69,7 +69,7 @@ class HIKHasherGreedy(object):
                 for p in params['params']:
                     out.append(compute_mask_rect_area(class_mask, p['rect']) >= p['t'])
             outs.append(out)
-        return image_search._bool_to_hash(np.array(out))
+        return image_search._bool_to_hash(np.array(outs))
 
     def train(self, database_masks, query_masks=None):
         """
