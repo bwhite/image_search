@@ -58,7 +58,7 @@ class HIKHasherGreedy(object):
 
     def __call__(self, masks):
         if masks.ndim == 3:
-            masks = masks.resize(1, masks.shape[0], masks.shape[1], masks.shape[2])
+            masks = masks.reshape(1, masks.shape[0], masks.shape[1], masks.shape[2])
         class_params = self.class_params.items()
         class_params.sort(key=lambda x: x[0])
         outs = []
