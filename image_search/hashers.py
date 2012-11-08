@@ -65,6 +65,8 @@ class MedianHasher(object):
         return self
 
     def _condition_features(self, features, pad=True):
+        if not isinstance(features, np.ndarray):
+            features = list(features)
         features = np.asfarray(features)
         assert features.ndim < 3
         if features.ndim == 1:
